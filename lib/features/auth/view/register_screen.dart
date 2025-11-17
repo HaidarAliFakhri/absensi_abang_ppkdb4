@@ -13,7 +13,6 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final nameC = TextEditingController();
   final emailC = TextEditingController();
   final batchC = TextEditingController();
