@@ -1,8 +1,9 @@
 import 'package:absensi_abang_ppkdb4/features/auth/view/dashboard_Screen.dart';
+import 'package:absensi_abang_ppkdb4/features/auth/view/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../provider/auth_provider.dart';
+import '../state_provider/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +15,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailC = TextEditingController();
   final passC = TextEditingController();
+
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +36,20 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(height: 15),
             TextField(
               controller: passC,
-              decoration: InputDecoration(labelText: "Password"),
-              obscureText: true,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: "Password",
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
             ),
             SizedBox(height: 25),
             auth.isLoading
@@ -61,6 +76,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     child: Text("Login"),
                   ),
+            const SizedBox(height: 20),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                  );
+                },
+                child: const Text("Belum punya akun? Daftar"),
+              ),
+            ),
           ],
         ),
       ),

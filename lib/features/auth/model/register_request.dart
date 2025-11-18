@@ -1,0 +1,19 @@
+class RegisterRequest {
+  final String name;
+  final String email;
+  final String password;
+  final String jenisKelamin;
+  final String profilePhoto;
+  final int batchId;
+  final int trainingId;
+
+  RegisterRequest({
+    required this.name,
+    required this.email,
+    required this.password,
+    required this.jenisKelamin,
+    required this.profilePhoto,
+    required this.batchId,
+    required this.trainingId,
+  });
+}

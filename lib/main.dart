@@ -1,9 +1,11 @@
-import 'package:absensi_abang_ppkdb4/features/auth/view/register_screen.dart';
+import 'package:absensi_abang_ppkdb4/features/auth/view/home_screen.dart';
+import 'package:absensi_abang_ppkdb4/features/auth/view/login_screen.dart';
+// import 'package:absensi_abang_ppkdb4/features/auth/view/splashscreen.dart';
+// import 'package:absensi_abang_ppkdb4/features/auth/view/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'features/auth/provider/auth_provider.dart';
-// import 'features/auth/view/login_screen.dart';
+import 'features/auth/state_provider/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +30,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: RegisterScreen(),
+      home: LoginScreen(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomeScreen(),
+      },
     );
   }
 }
