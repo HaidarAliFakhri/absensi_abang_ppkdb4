@@ -1,21 +1,12 @@
-import 'package:absensi_abang_ppkdb4/features/auth/view/home_screen.dart';
-import 'package:absensi_abang_ppkdb4/features/auth/view/login_screen.dart';
-// import 'package:absensi_abang_ppkdb4/features/auth/view/splashscreen.dart';
-// import 'package:absensi_abang_ppkdb4/features/auth/view/register_screen.dart';
+import 'package:absensi_abang_ppkdb4/screens/login_screen.dart';
+// import 'package:absensi_abang_ppkdb4/screens/mainpage.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'features/auth/state_provider/auth_provider.dart';
+// import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(
-    MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
-      child: const MyApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -31,10 +22,10 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: LoginScreen(),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-      },
+      // routes: {
+      // '/login': (context) => const LoginScreen(),
+      // '/home': (context) => const HomeScreen(),
+      // },
     );
   }
 }

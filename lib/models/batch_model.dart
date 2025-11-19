@@ -1,6 +1,17 @@
+// To parse this JSON data, do
+//
+//     final batchModel = batchModelFromJson(jsonString);
+
+import 'dart:convert';
+
+BatchModel batchModelFromJson(String str) =>
+    BatchModel.fromJson(json.decode(str));
+
+String batchModelToJson(BatchModel data) => json.encode(data.toJson());
+
 class BatchModel {
   String? message;
-  List<BatchModelData>? data;
+  List<Batch>? data;
 
   BatchModel({this.message, this.data});
 
@@ -8,9 +19,7 @@ class BatchModel {
     message: json["message"],
     data: json["data"] == null
         ? []
-        : List<BatchModelData>.from(
-            json["data"]!.map((x) => BatchModelData.fromJson(x)),
-          ),
+        : List<Batch>.from(json["data"]!.map((x) => Batch.fromJson(x))),
   );
 
   Map<String, dynamic> toJson() => {
@@ -21,16 +30,16 @@ class BatchModel {
   };
 }
 
-class BatchModelData {
+class Batch {
   int? id;
   String? batchKe;
   DateTime? startDate;
   DateTime? endDate;
-  String? createdAt;
-  String? updatedAt;
+  DateTime? createdAt;
+  DateTime? updatedAt;
   List<Training>? trainings;
 
-  BatchModelData({
+  Batch({
     this.id,
     this.batchKe,
     this.startDate,
@@ -40,17 +49,19 @@ class BatchModelData {
     this.trainings,
   });
 
-  factory BatchModelData.fromJson(Map<String, dynamic> json) => BatchModelData(
-    id: int.tryParse(json["id"].toString()),
-    batchKe: json["batch_ke"]?.toString(),
-    startDate: json["start_date"] != null
-        ? DateTime.tryParse(json["start_date"])
-        : null,
-    endDate: json["end_date"] != null
-        ? DateTime.tryParse(json["end_date"])
-        : null,
-    createdAt: json["created_at"]?.toString(),
-    updatedAt: json["updated_at"]?.toString(),
+  factory Batch.fromJson(Map<String, dynamic> json) => Batch(
+    id: json["id"],
+    batchKe: json["batch_ke"],
+    startDate: json["start_date"] == null
+        ? null
+        : DateTime.parse(json["start_date"]),
+    endDate: json["end_date"] == null ? null : DateTime.parse(json["end_date"]),
+    createdAt: json["created_at"] == null
+        ? null
+        : DateTime.parse(json["created_at"]),
+    updatedAt: json["updated_at"] == null
+        ? null
+        : DateTime.parse(json["updated_at"]),
     trainings: json["trainings"] == null
         ? []
         : List<Training>.from(
@@ -61,10 +72,12 @@ class BatchModelData {
   Map<String, dynamic> toJson() => {
     "id": id,
     "batch_ke": batchKe,
-    "start_date": startDate?.toIso8601String(),
-    "end_date": endDate?.toIso8601String(),
-    "created_at": createdAt,
-    "updated_at": updatedAt,
+    "start_date":
+        "${startDate!.year.toString().padLeft(4, '0')}-${startDate!.month.toString().padLeft(2, '0')}-${startDate!.day.toString().padLeft(2, '0')}",
+    "end_date":
+        "${endDate!.year.toString().padLeft(4, '0')}-${endDate!.month.toString().padLeft(2, '0')}-${endDate!.day.toString().padLeft(2, '0')}",
+    "created_at": createdAt?.toIso8601String(),
+    "updated_at": updatedAt?.toIso8601String(),
     "trainings": trainings == null
         ? []
         : List<dynamic>.from(trainings!.map((x) => x.toJson())),
@@ -79,8 +92,8 @@ class Training {
   Training({this.id, this.title, this.pivot});
 
   factory Training.fromJson(Map<String, dynamic> json) => Training(
-    id: int.tryParse(json["id"].toString()),
-    title: json["title"]?.toString(),
+    id: json["id"],
+    title: json["title"],
     pivot: json["pivot"] == null ? null : Pivot.fromJson(json["pivot"]),
   );
 
@@ -98,8 +111,8 @@ class Pivot {
   Pivot({this.trainingBatchId, this.trainingId});
 
   factory Pivot.fromJson(Map<String, dynamic> json) => Pivot(
-    trainingBatchId: json["training_batch_id"]?.toString(),
-    trainingId: json["training_id"]?.toString(),
+    trainingBatchId: json["training_batch_id"],
+    trainingId: json["training_id"],
   );
 
   Map<String, dynamic> toJson() => {
