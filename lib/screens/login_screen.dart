@@ -1,5 +1,6 @@
-import 'package:absensi_abang_ppkdb4/screens/main_screen.dart';
+import 'package:absensi_abang_ppkdb4/screens/dashboard_screen.dart';
 import 'package:absensi_abang_ppkdb4/services/api.dart';
+import 'package:absensi_abang_ppkdb4/services/preference_handler.dart';
 import 'package:flutter/material.dart';
 
 import 'register_screen.dart';
@@ -27,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => loading = true);
 
+    // Asumsi: AuthApi.login akan mengembalikan Map, termasuk token di 'body'
     final result = await AuthApi.login(
       email: emailC.text,
       password: passC.text,
@@ -38,16 +40,45 @@ class _LoginScreenState extends State<LoginScreen> {
     final body = result["body"];
 
     if (status == 200) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(body["message"])));
+      // 🔥 PERBAIKAN UTAMA: Akses token dari body["data"]["token"]
+      // Kita perlu mengekstrak 'data' sebagai Map terlebih dahulu.
+      final data = body["data"];
 
-      /// 🔥 Setelah login sukses → pindah ke MainPage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainPage()),
-      );
+      String? token;
+      if (data is Map<String, dynamic>) {
+        // Coba ambil dari data['token']
+        token = data["token"] as String?;
+      }
+
+      if (token != null && token.isNotEmpty) {
+        // PERBAIKAN UTAMA: AWAIT penyimpanan token & status login
+        await PreferenceHandler.saveToken(token);
+        await PreferenceHandler.saveLogin(true);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(body["message"] ?? "Login berhasil!")),
+        );
+
+        /// Setelah login sukses & token TER-AWAIT, pindah ke DashboardScreen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      } else {
+        // Token kosong/null
+        print(
+          "🚨 Peringatan: Respons API 200 OK, tetapi key 'data.token' kosong. Respons Body: $body",
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Login berhasil, namun Token tidak ditemukan di respons API.",
+            ),
+          ),
+        );
+      }
     } else {
+      // Login gagal (misalnya status 401 Unauthorized)
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(body["message"] ?? "Login gagal")));
@@ -69,9 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icon(Icons.email),
               ),
             ),
-
             const SizedBox(height: 20),
-
             TextField(
               controller: passC,
               obscureText: !showPassword,
@@ -88,18 +117,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
-
             ElevatedButton(
               onPressed: loading ? null : doLogin,
               child: loading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text("Login"),
             ),
-
             const SizedBox(height: 20),
-
             Center(
               child: TextButton(
                 onPressed: () async {

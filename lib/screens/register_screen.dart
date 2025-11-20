@@ -1,3 +1,6 @@
+// lib/screens/register_screen.dart
+
+import 'package:absensi_abang_ppkdb4/models/registermodels.dart';
 import 'package:absensi_abang_ppkdb4/services/api.dart';
 import 'package:flutter/material.dart';
 
@@ -13,69 +16,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailC = TextEditingController();
   final passC = TextEditingController();
 
-  String? gender;
-  int? selectedTraining;
+  List<Map<String, dynamic>> batchList = [];
+  List<Map<String, dynamic>> trainingList = [];
+
   int? selectedBatch;
+  int? selectedTraining;
+  String? selectedGender;
 
-  bool loading = false;
-  bool showPassword = false;
+  bool loading = true;
+  bool _isPasswordVisible = false; // 👈 State untuk visibilitas password
 
-  final List<Map<String, dynamic>> trainingList = [
-    {"id": 1, "label": "Web Developer"},
-    {"id": 2, "label": "Teknik Komputer"},
-    {"id": 3, "label": "Jaringan Komputer"},
-    {"id": 4, "label": "Mobile App Developer"},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
 
-  final List<Map<String, dynamic>> batchList = [
-    {"id": 1, "label": "Batch 2"},
-    {"id": 2, "label": "Batch 3"},
-    {"id": 3, "label": "Batch 4"},
-    {"id": 4, "label": "Batch 5"},
-  ];
+  Future<void> loadData() async {
+    final batches = await AuthApi.getBatch();
+    final trainings = await AuthApi.getTraining();
 
-  Future<void> doRegister() async {
-    if (nameC.text.isEmpty ||
-        emailC.text.isEmpty ||
-        passC.text.isEmpty ||
-        gender == null ||
+    setState(() {
+      batchList = batches.map((e) => {"id": e.id, "label": e.batchKe}).toList();
+      trainingList = trainings
+          .map((e) => {"id": e.id, "label": e.title})
+          .toList();
+      loading = false;
+    });
+  }
+
+  void doRegister() async {
+    if (selectedBatch == null ||
         selectedTraining == null ||
-        selectedBatch == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Lengkapi semua field")));
+        selectedGender == null ||
+        nameC.text.isEmpty ||
+        emailC.text.isEmpty ||
+        passC.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Mohon lengkapi semua data!")),
+      );
       return;
     }
 
-    setState(() => loading = true);
-
-    final success = await AuthApi.register(
+    final registerData = RegisterModel(
       name: nameC.text,
       email: emailC.text,
       password: passC.text,
-      gender: gender!,
+      gender: selectedGender!,
       trainingId: selectedTraining!,
       batchId: selectedBatch!,
     );
 
-    print("REGISTER RESULT: $success");
+    final res = await AuthApi.register(registerData);
 
-    setState(() => loading = false);
-
-    if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Register berhasil!")));
-      Navigator.pop(context, true);
+    if (res) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Registrasi Berhasil! Silakan masuk.")),
+      );
+      // Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Gagal register")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Registrasi Gagal. Coba lagi.")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text("Register")),
       body: Padding(
@@ -84,26 +95,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             TextField(
               controller: nameC,
-              decoration: const InputDecoration(labelText: "Nama"),
+              decoration: const InputDecoration(labelText: "Name"),
             ),
-
             TextField(
               controller: emailC,
               decoration: const InputDecoration(labelText: "Email"),
             ),
 
-            // Password + Visibility
+            // 💡 FIELD PASSWORD DENGAN VISIBILITY TOGGLE
             TextField(
               controller: passC,
-              obscureText: !showPassword,
+              // Menggunakan _isPasswordVisible untuk menyembunyikan/menampilkan teks
+              obscureText: !_isPasswordVisible,
               decoration: InputDecoration(
                 labelText: "Password",
+                // 👈 Tambahkan IconButton untuk toggle visibility
                 suffixIcon: IconButton(
                   icon: Icon(
-                    showPassword ? Icons.visibility_off : Icons.visibility,
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
                   ),
                   onPressed: () {
-                    setState(() => showPassword = !showPassword);
+                    // Update state saat ikon diklik
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
                   },
                 ),
               ),
@@ -111,57 +128,62 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             const SizedBox(height: 20),
 
-            // Jenis Kelamin
+            // DROPDOWN JENIS KELAMIN
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(labelText: "Jenis Kelamin"),
+              initialValue: selectedGender,
               items: const [
-                DropdownMenuItem(value: "L", child: Text("Laki-laki")),
+                DropdownMenuItem(value: "L", child: Text("Laki-Laki")),
                 DropdownMenuItem(value: "P", child: Text("Perempuan")),
               ],
-              onChanged: (v) => setState(() => gender = v),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Training Dropdown
-            DropdownButtonFormField<int>(
-              decoration: const InputDecoration(labelText: "Training"),
-              initialValue: selectedTraining,
-              items: trainingList.map((e) {
-                return DropdownMenuItem<int>(
-                  value: e["id"],
-                  child: Text(e["label"]),
-                );
-              }).toList(),
               onChanged: (v) {
-                setState(() => selectedTraining = v);
+                setState(() => selectedGender = v);
               },
             ),
 
             const SizedBox(height: 20),
 
-            // Batch Dropdown
+            // DROPDOWN BATCH
             DropdownButtonFormField<int>(
-              decoration: const InputDecoration(labelText: "Batch"),
+              decoration: const InputDecoration(labelText: "Pilih Batch"),
               initialValue: selectedBatch,
-              items: batchList.map((e) {
-                return DropdownMenuItem<int>(
-                  value: e["id"],
-                  child: Text(e["label"]),
-                );
-              }).toList(),
+              items: batchList
+                  .map(
+                    (e) => DropdownMenuItem<int>(
+                      value: e["id"],
+                      child: Text(e["label"]),
+                    ),
+                  )
+                  .toList(),
               onChanged: (v) {
                 setState(() => selectedBatch = v);
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // DROPDOWN TRAINING
+            DropdownButtonFormField<int>(
+              decoration: const InputDecoration(labelText: "Pilih Training"),
+              initialValue: selectedTraining,
+              items: trainingList
+                  .map(
+                    (e) => DropdownMenuItem<int>(
+                      value: e["id"],
+                      child: Text(e["label"]),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) {
+                setState(() => selectedTraining = v);
               },
             ),
 
             const SizedBox(height: 30),
 
             ElevatedButton(
-              onPressed: loading ? null : doRegister,
-              child: loading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Register"),
+              onPressed: doRegister,
+              child: const Text("Register"),
             ),
           ],
         ),

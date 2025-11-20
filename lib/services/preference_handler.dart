@@ -4,32 +4,39 @@ class PreferenceHandler {
   static const String isLogin = "isLogin";
   static const String isToken = "isToken";
 
-  //Save data login pada saat login
-
+  // Simpan status login
   static saveLogin(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(isLogin, value);
   }
 
+  // Simpan token JWT setelah login sukses
   static saveToken(String value) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setString(isToken, value);
   }
 
-  //Ambil data login pada saat mau login / ke dashboard
+  // Ambil status login
   static getLogin() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(isLogin);
   }
 
+  // Ambil token JWT
   static getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(isToken);
   }
 
-  //Hapus data login pada saat logout
+  // Hapus status login
   static removeLogin() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.remove(isLogin);
+  }
+
+  // Hapus token pada saat logout
+  static removeToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.remove(isToken);
   }
 }

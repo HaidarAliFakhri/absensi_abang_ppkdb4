@@ -1,15 +1,17 @@
+// lib/services/api.dart
+
 import 'dart:convert';
 
+import 'package:absensi_abang_ppkdb4/app/constants/endpoint.dart';
 import 'package:absensi_abang_ppkdb4/models/batch_model.dart';
+import 'package:absensi_abang_ppkdb4/models/registermodels.dart';
 import 'package:absensi_abang_ppkdb4/models/training_model.dart';
 import 'package:http/http.dart' as http;
 
 class AuthApi {
-  static const String baseUrl = "https://absensib1.mobileprojp.com/api";
-
-  // GET TRAINING
+  // GET TRAINING (Sudah Static)
   static Future<List<Trainings>> getTraining() async {
-    final url = Uri.parse("$baseUrl/training");
+    final url = Uri.parse(Endpoint.trainings);
     final res = await http.get(url);
 
     if (res.statusCode == 200) {
@@ -19,9 +21,9 @@ class AuthApi {
     return [];
   }
 
-  // GET BATCH
+  // GET BATCH (Sudah Static)
   static Future<List<Batch>> getBatch() async {
-    final url = Uri.parse("$baseUrl/batch");
+    final url = Uri.parse(Endpoint.batches);
     final res = await http.get(url);
 
     if (res.statusCode == 200) {
@@ -31,39 +33,22 @@ class AuthApi {
     return [];
   }
 
-  // REGISTER
-  static Future<bool> register({
-    required String name,
-    required String email,
-    required String password,
-    required String gender,
-    required int trainingId,
-    required int batchId,
-  }) async {
-    final url = Uri.parse("$baseUrl/register");
+  // REGISTER (Sudah Static dan menerima RegisterModel)
+  static Future<bool> register(RegisterModel data) async {
+    final url = Uri.parse(Endpoint.register);
 
     try {
       final res = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "name": name,
-          "email": email,
-          "password": password,
-          "jenis_kelamin": gender,
-          "training_id": trainingId,
-          "batch_id": batchId,
-          "profile_photo": "",
-        }),
+        body: jsonEncode(data.toJson()),
       );
 
-      print("REGISTER STATUS: ${res.statusCode}");
-      print("REGISTER BODY: ${res.body}");
+      print("REGISTER RESPONSE: ${res.body}");
 
-      // Sukses kalau status 200 atau 201
       return res.statusCode == 200 || res.statusCode == 201;
     } catch (e) {
-      print("REGISTER ERROR: $e");
+      print("Register Error: $e");
       return false;
     }
   }
@@ -73,7 +58,7 @@ class AuthApi {
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse("$baseUrl/login");
+    final url = Uri.parse(Endpoint.login);
 
     final res = await http.post(
       url,
@@ -81,7 +66,6 @@ class AuthApi {
       body: jsonEncode({"email": email, "password": password}),
     );
 
-    // Kembalikan JSON apa adanya
     return {"status": res.statusCode, "body": jsonDecode(res.body)};
   }
 }

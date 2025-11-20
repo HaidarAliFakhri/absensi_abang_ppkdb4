@@ -1,10 +1,11 @@
-import 'package:absensi_abang_ppkdb4/screens/login_screen.dart';
-// import 'package:absensi_abang_ppkdb4/screens/mainpage.dart';
+import 'package:absensi_abang_ppkdb4/screens/login_screen.dart'; // Ganti dengan Home/Splash Screen Anda
 import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart'; // 🔥 Wajib di-import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await initializeDateFormatting('id_ID', null);
 
   runApp(const MyApp());
 }
@@ -15,17 +16,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Absensi App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: LoginScreen(),
-      // routes: {
-      // '/login': (context) => const LoginScreen(),
-      // '/home': (context) => const HomeScreen(),
-      // },
+      title: 'Absensi Abang PPKDB4',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      // Anda mungkin perlu mengganti ini dengan Splash/Landing Screen yang memeriksa status login
+      home: const LoginScreen(),
     );
   }
 }
