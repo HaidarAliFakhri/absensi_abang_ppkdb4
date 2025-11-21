@@ -12,6 +12,7 @@ class Endpoint {
   // Attendance (Absensi)
   static const String checkIn = "$BASE_URL/absen/check-in";
   static const String checkOut = "$BASE_URL/absen/check-out";
+  static const String izin = "$BASE_URL/izin";
   static const String todayPresence = "$BASE_URL/absen/today";
   static const String historyAbsen = "$BASE_URL/absen/history";
   static const String presenceStats = "$BASE_URL/absen/stats";

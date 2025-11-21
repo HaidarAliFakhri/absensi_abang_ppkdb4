@@ -38,7 +38,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
             icon: Icon(Icons.dashboard_outlined),
             label: "Dashboard",
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: "Map"),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             label: "Profile",

@@ -1,6 +1,6 @@
-import 'package:absensi_abang_ppkdb4/screens/dashboard_screen.dart';
 import 'package:absensi_abang_ppkdb4/services/api.dart';
 import 'package:absensi_abang_ppkdb4/services/preference_handler.dart';
+import 'package:absensi_abang_ppkdb4/widgets/navigation.dart';
 import 'package:flutter/material.dart';
 
 import 'register_screen.dart';
@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
         /// Setelah login sukses & token TER-AWAIT, pindah ke DashboardScreen
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          MaterialPageRoute(builder: (_) => const MainNavScreen()),
         );
       } else {
         // Token kosong/null
