@@ -6,6 +6,7 @@ import 'package:absensi_abang_ppkdb4/services/preference_handler.dart';
 import 'package:absensi_abang_ppkdb4/utility/date_utility.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,14 +22,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isInitialLoading = true;
   String? _initialError;
 
+  GoogleMapController? _mapController;
+  Position? _currentPosition;
+  LatLng? _currentLatLng;
+
   @override
   void initState() {
     super.initState();
     _loadProfile();
     _loadTodayPresence();
+    _getCurrentLocation();
   }
 
-  // LOAD PROFILE
   Future<void> _loadProfile() async {
     final profile = await AttendanceService.getProfile();
     await Future.delayed(const Duration(milliseconds: 400));
@@ -54,17 +59,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // LOAD TODAY PRESENCE
   Future<void> _loadTodayPresence() async {
     final data = await AttendanceService.getTodayPresence();
     setState(() => _todayAttendance = data);
   }
 
-  // GET CURRENT GPS
   Future<Position?> _getCurrentLocation() async {
     bool enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
-      _showSnackbar('Layanan lokasi dinonaktifkan.');
+      _showSnackbar('GPS tidak aktif. Aktifkan untuk menggunakan absensi.');
       return null;
     }
 
@@ -72,25 +75,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
+    }
 
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        _showSnackbar('Izin lokasi ditolak.');
-        return null;
-      }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      _showSnackbar('Izin lokasi ditolak.');
+      return null;
     }
 
     try {
-      return await Geolocator.getCurrentPosition(
+      final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
+
+      setState(() {
+        _currentPosition = pos;
+        _currentLatLng = LatLng(pos.latitude, pos.longitude);
+      });
+
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLng(_currentLatLng!),
+        );
+      }
+
+      return pos;
     } catch (e) {
-      _showSnackbar('Gagal mengambil lokasi.');
+      _showSnackbar('Gagal mengambil lokasi: $e');
       return null;
     }
   }
 
-  // HANDLE CHECK-IN
   Future<void> _handleCheckIn() async {
     if (_user == null) return;
 
@@ -106,7 +121,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoading = false);
   }
 
-  // HANDLE CHECK-OUT
   Future<void> _handleCheckOut() async {
     if (_user == null) return;
 
@@ -122,7 +136,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoading = false);
   }
 
-  // HANDLE AJUKAN IZIN
   Future<void> _showIzinDialog() async {
     final TextEditingController alasanC = TextEditingController();
 
@@ -170,7 +183,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // LOGOUT
   Future<void> _logout() async {
     await PreferenceHandler.removeToken();
     await PreferenceHandler.saveLogin(false);
@@ -180,44 +192,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // SNACKBAR
   void _showSnackbar(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // ERROR SCREEN
   Widget _buildErrorScreen() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 60),
-            const SizedBox(height: 16),
-            Text(
-              _initialError ?? 'Terjadi kesalahan.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.red, fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadProfile,
-              icon: const Icon(Icons.refresh),
-              label: const Text("Coba Lagi"),
-            ),
-            TextButton(
-              onPressed: _logout,
-              child: const Text("Logout & Login Ulang"),
-            ),
-          ],
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              const SizedBox(height: 16),
+              Text(
+                _initialError ?? 'Terjadi kesalahan.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red, fontSize: 16),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _loadProfile,
+                icon: const Icon(Icons.refresh),
+                label: const Text("Coba Lagi"),
+              ),
+              TextButton(
+                onPressed: _logout,
+                child: const Text("Logout & Login Ulang"),
+              ),
+              const SizedBox(height: 20),
+              const Text("Lokasi Anda Sekarang:",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              Expanded(
+                child: _currentLatLng == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : GoogleMap(
+                        mapType: MapType.normal,
+                        myLocationEnabled: true,
+                        initialCameraPosition: CameraPosition(
+                          target: _currentLatLng!,
+                          zoom: 17,
+                        ),
+                        markers: {
+                          Marker(
+                            markerId: const MarkerId("you"),
+                            position: _currentLatLng!,
+                          )
+                        },
+                        onMapCreated: (controller) =>
+                            setState(() => _mapController = controller),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // MAIN UI
   @override
   Widget build(BuildContext context) {
     if (_isInitialLoading) {
@@ -225,94 +260,111 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     if (_user == null) {
-      return Scaffold(body: _buildErrorScreen());
+      return _buildErrorScreen();
     }
 
     return Scaffold(
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // HEADER
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Assalamualaikum, ${_user!.name}",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
-              ],
-            ),
-
-            Text(
-              "Hari ini: ${DateUtility.getTodayDate()}",
-              style: const TextStyle(color: Colors.grey),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ABSEN BUTTONS
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleCheckIn,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Absen Masuk"),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleCheckOut,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Absen Pulang"),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-            Center(
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _showIzinDialog,
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Ajukan Izin"),
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Assalamualaikum, ${_user!.name}",
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
+              IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
+            ],
+          ),
+
+          Text("Hari ini: ${DateUtility.getTodayDate()}",
+              style: const TextStyle(color: Colors.grey)),
+
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleCheckIn,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Absen Masuk"),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleCheckOut,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Absen Pulang"),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          Center(
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _showIzinDialog,
+              child: const Text("Ajukan Izin"),
             ),
+          ),
 
-            const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-            // STATUS HARI INI
-            Text(
-              "Status Hari Ini:",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+          const Text("Status Hari Ini:",
+              style: TextStyle(fontWeight: FontWeight.bold)),
 
-            const SizedBox(height: 10),
+          const SizedBox(height: 10),
 
-            _todayAttendance == null
-                ? const Text("Belum ada absensi hari ini.")
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Status: ${_todayAttendance!.status}"),
-                      if (_todayAttendance!.checkInTime != null)
-                        Text("Check-in: ${_todayAttendance!.checkInTime}"),
-                      if (_todayAttendance!.alasanIzin != null)
-                        Text("Izin: ${_todayAttendance!.alasanIzin}"),
-                    ],
+          _todayAttendance == null
+              ? const Text("Belum ada absensi hari ini.")
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Status: ${_todayAttendance!.status}"),
+                    if (_todayAttendance!.checkInTime != null)
+                      Text("Check-in: ${_todayAttendance!.checkInTime}"),
+                    if (_todayAttendance!.alasanIzin != null)
+                      Text("Izin: ${_todayAttendance!.alasanIzin}"),
+                  ],
+                ),
+
+          const SizedBox(height: 20),
+
+          const Text(
+            "Lokasi Sekarang:",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            height: 250,
+            child: _currentLatLng == null
+                ? const Center(child: CircularProgressIndicator())
+                : GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: _currentLatLng!,
+                      zoom: 17,
+                    ),
+                    myLocationEnabled: true,
+                    onMapCreated: (controller) =>
+                        setState(() => _mapController = controller),
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId("me"),
+                        position: _currentLatLng!,
+                      )
+                    },
                   ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
